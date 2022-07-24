@@ -111,8 +111,12 @@ class SoftGroup(nn.Module):
         if self.with_coords:
             feats = torch.cat((feats, coords_float), 1)
         voxel_feats = voxelization(feats, p2v_map)
+        # print('forward_train feats', feats.shape)
         input = spconv.SparseConvTensor(voxel_feats, voxel_coords.int(), spatial_shape, batch_size)
         semantic_scores, pt_offsets, output_feats = self.forward_backbone(input, v2p_map)
+        # print('forward_train semantic scores', semantic_scores.shape)
+        # print('forward_train pt offsets', pt_offsets.shape)
+        # print('forward_train output_feats', output_feats.shape)
 
         # point wise losses
         point_wise_loss = self.point_wise_loss(semantic_scores, pt_offsets, semantic_labels,
@@ -124,6 +128,8 @@ class SoftGroup(nn.Module):
             proposals_idx, proposals_offset = self.forward_grouping(semantic_scores, pt_offsets,
                                                                     batch_idxs, coords_float,
                                                                     self.grouping_cfg)
+            # print('forward_train proposals_idx', proposals_idx.shape)
+            # print('forward_train proposals_offset', proposals_offset.shape)
             if proposals_offset.shape[0] > self.train_cfg.max_proposal_num:
                 proposals_offset = proposals_offset[:self.train_cfg.max_proposal_num + 1]
                 proposals_idx = proposals_idx[:proposals_offset[-1]]
@@ -135,6 +141,7 @@ class SoftGroup(nn.Module):
                 coords_float,
                 rand_quantize=True,
                 **self.instance_voxel_cfg)
+            
             instance_batch_idxs, cls_scores, iou_scores, mask_scores = self.forward_instance(
                 inst_feats, inst_map)
             instance_loss = self.instance_loss(cls_scores, mask_scores, iou_scores, proposals_idx,
@@ -270,9 +277,15 @@ class SoftGroup(nn.Module):
             offset_labels=pt_offset_labels.cpu().numpy(),
             instance_labels=instance_labels.cpu().numpy())
         if not self.semantic_only:
+            # print('forward_test semantic_scores', semantic_scores.shape)
+            # print('forward_test pt_offsets', pt_offsets.shape)
+            # print('forward_test batch_idxs', batch_idxs.shape)
+            # print('forward_test coords_float', coords_float.shape)
+            # print('forward_test grouping_cfg', self.grouping_cfg)
             proposals_idx, proposals_offset = self.forward_grouping(semantic_scores, pt_offsets,
                                                                     batch_idxs, coords_float,
                                                                     self.grouping_cfg)
+            # print('forward_test after forward grouping proposals_idx', proposals_idx.shape)
             inst_feats, inst_map = self.clusters_voxelization(proposals_idx, proposals_offset,
                                                               output_feats, coords_float,
                                                               **self.instance_voxel_cfg)
@@ -388,6 +401,12 @@ class SoftGroup(nn.Module):
         cls_scores = self.cls_linear(feats)
         iou_scores = self.iou_score_linear(feats)
 
+        # if cls_scores.size(0) > 50:
+        #     print('inst_feats size', inst_feats)
+        #     print('feats size', feats.size())
+        #     print('cls_scores size', cls_scores.size())
+        #     print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+
         return instance_batch_idxs, cls_scores, iou_scores, mask_scores
 
     @force_fp32(apply_to=('semantic_scores', 'cls_scores', 'iou_scores', 'mask_scores'))
@@ -404,6 +423,7 @@ class SoftGroup(nn.Module):
                 score_pred = cls_scores.new_tensor([1.], dtype=torch.float32)
                 mask_pred = (semantic_pred == i)[None, :].int()
             else:
+                # print('SOFTGROUP GET_INSTANCES', num_instances, num_points)
                 cls_pred = cls_scores.new_full((num_instances, ), i + 1, dtype=torch.long)
                 cur_cls_scores = cls_scores[:, i]
                 cur_iou_scores = iou_scores[:, i]
@@ -467,10 +487,14 @@ class SoftGroup(nn.Module):
                               scale,
                               spatial_shape,
                               rand_quantize=False):
+        # print('clustesr_voxelization feats', feats.shape)
         batch_idx = clusters_idx[:, 0].cuda().long()
         c_idxs = clusters_idx[:, 1].cuda()
         feats = feats[c_idxs.long()]
         coords = coords[c_idxs.long()]
+        # print('clustesr_voxelization clusters_idx', clusters_idx.shape)
+        # print('clustesr_voxelization c_idxs', c_idxs.shape)
+        # print('clustesr_voxelization feats 2', feats.shape)
 
         coords_min = sec_min(coords, clusters_offset.cuda())
         coords_max = sec_max(coords, clusters_offset.cuda())

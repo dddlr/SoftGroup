@@ -18,6 +18,15 @@ if __name__ == '__main__':
                     'softgroup/ops/src/softgroup_api.cpp', 'softgroup/ops/src/softgroup_ops.cpp',
                     'softgroup/ops/src/cuda.cu'
                 ],
+
+                # Very hacky way to include google-sparsehash when it's installed as
+                # a conda package
+                #
+                # Modify so that it points to the include folder in your conda environment,
+                # or comment out if libsparsehash-dev is installed as a debian package
+                # on your system
+                include_dirs=['/local/gwo21_conda/envs/softgroup/include'],
+
                 extra_compile_args={
                     'cxx': ['-g'],
                     'nvcc': ['-O2']

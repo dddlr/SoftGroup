@@ -9,7 +9,7 @@ import torch
 import yaml
 from munch import Munch
 from softgroup.data import build_dataloader, build_dataset
-from softgroup.evaluation import (ScanNetEval, evaluate_offset_mae, evaluate_semantic_acc,
+from softgroup.evaluation import (ScanNetEval, TreesEval, evaluate_offset_mae, evaluate_semantic_acc,
                                   evaluate_semantic_miou)
 from softgroup.model import SoftGroup
 from softgroup.util import (AverageMeter, SummaryWriter, build_optimizer, checkpoint_save,
@@ -109,8 +109,11 @@ def validate(epoch, model, val_loader, cfg, logger, writer):
         if not cfg.model.semantic_only:
             logger.info('Evaluate instance segmentation')
             eval_min_npoint = getattr(cfg, 'eval_min_npoint', None)
-            scannet_eval = ScanNetEval(val_set.CLASSES, eval_min_npoint)
-            eval_res = scannet_eval.evaluate(all_pred_insts, all_gt_insts)
+            if cfg.data.test.type == 'trees':
+                eval_handler = TreesEval(val_set.CLASSES, eval_min_npoint)
+            else:
+                eval_handler = ScanNetEval(val_set.CLASSES, eval_min_npoint)
+            eval_res = eval_handler.evaluate(all_pred_insts, all_gt_insts)
             writer.add_scalar('val/AP', eval_res['all_ap'], epoch)
             writer.add_scalar('val/AP_50', eval_res['all_ap_50%'], epoch)
             writer.add_scalar('val/AP_25', eval_res['all_ap_25%'], epoch)

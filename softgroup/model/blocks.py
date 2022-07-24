@@ -86,6 +86,7 @@ class UBlock(nn.Module):
         super().__init__()
 
         self.nPlanes = nPlanes
+        self._indice_key_id = indice_key_id
 
         blocks = {
             'block{}'.format(i):
@@ -129,7 +130,6 @@ class UBlock(nn.Module):
             self.blocks_tail = spconv.SparseSequential(blocks_tail)
 
     def forward(self, input):
-
         output = self.blocks(input)
         identity = spconv.SparseConvTensor(output.features, output.indices, output.spatial_shape,
                                            output.batch_size)
