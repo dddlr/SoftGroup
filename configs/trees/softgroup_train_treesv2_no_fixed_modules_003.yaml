@@ -9,13 +9,13 @@ model:
   # ignore_label: 1  # ignore non-tree points
   grouping_cfg:
     score_thr: 0.2
-    radius: 2.0
+    radius: 0.04
     mean_active: 300
     class_numpoint_mean: [-1., 400., 20.]
-    npoint_thr: 1  # absolute if class_numpoint == -1, relative if class_numpoint != -1
+    npoint_thr: 0.05  # absolute if class_numpoint == -1, relative if class_numpoint != -1
     ignore_classes: []
   instance_voxel_cfg:
-    scale: 1
+    scale: 75
     spatial_shape: 20
   train_cfg:
     max_proposal_num: 200
@@ -37,7 +37,7 @@ data:
     training: True
     repeat: 4  # or 4?
     voxel_cfg:
-      scale: 1
+      scale: 75
       spatial_shape: [128, 512]
       max_npoint: 250000
       min_npoint: 5000
@@ -48,7 +48,7 @@ data:
     suffix: '.pth'
     training: False
     voxel_cfg:
-      scale: 5
+      scale: 75
       spatial_shape: [128, 512]
       max_npoint: 250000
       min_npoint: 5000
