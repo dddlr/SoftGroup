@@ -36,7 +36,7 @@ data:
     training: True
     repeat: 4  # or 4?
     voxel_cfg:
-      scale: 1
+      scale: 4
       spatial_shape: [128, 512]
       max_npoint: 250000
       min_npoint: 5000
@@ -70,9 +70,9 @@ save_cfg:
   instance: True
 
 fp16: False
-epochs: 128
+epochs: 32
 step_epoch: 50
-save_freq: 4
+save_freq: 1
 # pretrain: './hais_ckpt_spconv2.pth'
 pretrain: ''
 work_dir: ''
