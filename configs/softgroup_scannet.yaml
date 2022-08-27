@@ -57,10 +57,10 @@ data:
 dataloader:
   train:
     batch_size: 4
-    num_workers: 4
+    num_workers: 64
   test:
     batch_size: 1
-    num_workers: 1
+    num_workers: 64
 
 optimizer:
   type: 'Adam'
