@@ -10,6 +10,7 @@ from ..ops import (ballquery_batch_p, bfs_cluster, get_mask_iou_on_cluster, get_
                    get_mask_label, global_avg_pool, sec_max, sec_min, voxelization,
                    voxelization_idx)
 from ..util import cuda_cast, force_fp32, rle_encode
+from ..util.segloss.dice_loss import SoftDiceLoss
 from .blocks import MLP, ResidualBlock, UBlock
 
 
@@ -76,6 +77,8 @@ class SoftGroup(nn.Module):
             mod = getattr(self, mod)
             for param in mod.parameters():
                 param.requires_grad = False
+
+        self.soft_dice_loss = SoftDiceLoss()
 
     def init_weights(self):
         for m in self.modules():
@@ -150,6 +153,27 @@ class SoftGroup(nn.Module):
             losses.update(instance_loss)
         return self.parse_losses(losses)
 
+    def _dice_loss(self, input_, target, class_weights):
+        # See https://github.com/pytorch/pytorch/issues/1249#issuecomment-339904369
+
+        smooth = 1.
+
+        # For each point, get the class SoftGroup is most confident about
+        input_ = input_[:,1:].argmax(1)
+
+        # This should theoretically only make the loss of the tree class
+        # go down??
+
+        iflat = input_.view(-1)
+        tflat = target.view(-1)
+        intersection = (iflat * tflat).sum()
+
+        loss = 1 - (
+            ((2. * intersection + smooth) / (iflat.sum() + tflat.sum() + smooth))
+        )
+
+        return loss
+
     def point_wise_loss(self, semantic_scores, pt_offsets, semantic_labels, instance_labels,
                         pt_offset_labels):
         losses = {}
@@ -158,8 +182,23 @@ class SoftGroup(nn.Module):
         else:
             weight = None
         semantic_loss = F.cross_entropy(
-            semantic_scores, semantic_labels, weight=weight, ignore_index=self.ignore_label)
+            semantic_scores,
+            semantic_labels,
+            weight=weight,
+            ignore_index=self.ignore_label,
+        )
+        print('semantic_scores', semantic_scores.shape)
+        print('semantic_labels', semantic_labels.shape)
+        # semantic_loss = self._dice_loss(semantic_scores, semantic_labels - 1, weight)
+        # semantic_loss = self.soft_dice_loss(semantic_scores, semantic_labels)
+
+        # semantic_scores_one_hot = torch.nn.functional.one_hot(semantic_scores[:, 1:].argmax(1))
+        # semantic_scores_two_classes = torch.nn.functional.one_hot(semantic_labels - 1)
+        # semantic_loss = self.soft_dice_loss(semantic_scores_one_hot, semantic_labels - 1)
+
+
         losses['semantic_loss'] = semantic_loss
+        print('semantic loss', semantic_loss)
 
         pos_inds = instance_labels != self.ignore_label
         if pos_inds.sum() == 0:
