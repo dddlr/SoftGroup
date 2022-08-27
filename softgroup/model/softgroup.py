@@ -22,6 +22,8 @@ class SoftGroup(nn.Module):
                  semantic_classes=20,
                  instance_classes=18,
                  semantic_weight=None,
+                 ignore_offset_loss=True,
+                 offset_loss_multiplier=1,
                  sem2ins_classes=[],
                  ignore_label=-100,
                  with_coords=True,
@@ -45,6 +47,8 @@ class SoftGroup(nn.Module):
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
         self.fixed_modules = fixed_modules
+        self.ignore_offset_loss = ignore_offset_loss
+        self.offset_loss_multiplier = offset_loss_multiplier
 
         block = ResidualBlock
         norm_fn = functools.partial(nn.BatchNorm1d, eps=1e-4, momentum=0.1)
@@ -167,7 +171,10 @@ class SoftGroup(nn.Module):
         else:
             offset_loss = F.l1_loss(
                 pt_offsets[pos_inds], pt_offset_labels[pos_inds], reduction='sum') / pos_inds.sum()
-        losses['offset_loss'] = offset_loss
+        if self.ignore_offset_loss:
+            losses['offset_loss'] = offset_loss * 0
+        else:
+            losses['offset_loss'] = offset_loss
         return losses
 
     @force_fp32(apply_to=('cls_scores', 'mask_scores', 'iou_scores'))
@@ -241,7 +248,12 @@ class SoftGroup(nn.Module):
         return losses
 
     def parse_losses(self, losses):
-        loss = sum(v for v in losses.values())
+        loss = 0
+        for k, v in losses.items():
+            if k == 'offset_loss':
+                loss += self.offset_loss_multiplier * v
+            else:
+                loss += v
         losses['loss'] = loss
         for loss_name, loss_value in losses.items():
             if dist.is_available() and dist.is_initialized():
