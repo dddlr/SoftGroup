@@ -27,6 +27,7 @@ class SoftGroup(nn.Module):
                  offset_loss_multiplier=1,
                  sem2ins_classes=[],
                  ignore_label=-100,
+                 ignore_instance_label=-100,
                  with_coords=True,
                  grouping_cfg=None,
                  instance_voxel_cfg=None,
@@ -41,6 +42,11 @@ class SoftGroup(nn.Module):
         self.instance_classes = instance_classes
         self.semantic_weight = semantic_weight
         self.sem2ins_classes = sem2ins_classes
+        self.ignore_instance_label = ignore_instance_label
+
+        # TODO: this is debug code to make the trees work
+        self.ignore_instance_label = 0
+
         self.ignore_label = ignore_label
         self.with_coords = with_coords
         self.grouping_cfg = grouping_cfg
@@ -118,12 +124,13 @@ class SoftGroup(nn.Module):
         if self.with_coords:
             feats = torch.cat((feats, coords_float), 1)
         voxel_feats = voxelization(feats, p2v_map)
-        # print('forward_train feats', feats.shape)
+        print('forward_train feats', feats.shape)
         input = spconv.SparseConvTensor(voxel_feats, voxel_coords.int(), spatial_shape, batch_size)
         semantic_scores, pt_offsets, output_feats = self.forward_backbone(input, v2p_map)
-        # print('forward_train semantic scores', semantic_scores.shape)
-        # print('forward_train pt offsets', pt_offsets.shape)
-        # print('forward_train output_feats', output_feats.shape)
+        print('forward_train semantic scores', semantic_scores.shape)
+        print('forward_train pt offsets', pt_offsets.shape)
+        print('forward_train coords range:', coords_float.min(), 'to', coords_float.max())
+        print('forward_train output_feats', output_feats.shape)
 
         # point wise losses
         point_wise_loss = self.point_wise_loss(semantic_scores, pt_offsets, semantic_labels,
@@ -135,8 +142,8 @@ class SoftGroup(nn.Module):
             proposals_idx, proposals_offset = self.forward_grouping(semantic_scores, pt_offsets,
                                                                     batch_idxs, coords_float,
                                                                     self.grouping_cfg)
-            # print('forward_train proposals_idx', proposals_idx.shape)
-            # print('forward_train proposals_offset', proposals_offset.shape)
+            print('forward_train proposals_idx', proposals_idx.shape)
+            print('forward_train proposals_offset', proposals_offset.shape)
             if proposals_offset.shape[0] > self.train_cfg.max_proposal_num:
                 proposals_offset = proposals_offset[:self.train_cfg.max_proposal_num + 1]
                 proposals_idx = proposals_idx[:proposals_offset[-1]]
@@ -204,7 +211,13 @@ class SoftGroup(nn.Module):
         losses['semantic_loss'] = semantic_loss
         print('semantic loss', semantic_loss)
 
-        pos_inds = instance_labels != self.ignore_label
+        print('instance_labels', len(instance_labels), instance_labels)
+        print('instance_labels', len(instance_labels), set(instance_labels.cpu().numpy()))
+        print('instance_labels excl instance label', (instance_labels != self.ignore_instance_label).sum(), instance_labels != self.ignore_instance_label)
+        print('ignore_instance_label', self.ignore_instance_label)
+
+        pos_inds = instance_labels != self.ignore_instance_label
+
         if pos_inds.sum() == 0:
             offset_loss = 0 * pt_offsets.sum()
         else:
@@ -214,6 +227,16 @@ class SoftGroup(nn.Module):
             losses['offset_loss'] = offset_loss * 0
         else:
             losses['offset_loss'] = offset_loss
+
+        print('offset loss calculated:', offset_loss)
+        print('number of pos_inds:', pos_inds.sum())
+        print()
+        print(f'pt_offsets stats: min {pt_offsets[pos_inds].min(0)}, max {pt_offsets[pos_inds].max(0)}, mean {pt_offsets[pos_inds].mean(0)}, std {pt_offsets[pos_inds].std(0)}')
+        print()
+        print(f'pt_offset_labels stats: min {pt_offset_labels[pos_inds].min(0)}, max {pt_offset_labels[pos_inds].max(0)}, mean {pt_offset_labels[pos_inds].mean(0)}, std {pt_offset_labels[pos_inds].std(0)}')
+        print()
+        print(f'pt_offsets - pt_offset_labels stats: min {(pt_offsets[pos_inds] - pt_offset_labels[pos_inds]).min(0)}, max {(pt_offsets[pos_inds] - pt_offset_labels[pos_inds]).max(0)}, mean {(pt_offsets[pos_inds] - pt_offset_labels[pos_inds]).mean(0)}, std {(pt_offsets[pos_inds] - pt_offset_labels[pos_inds]).std(0)}')
+        print()
         return losses
 
     @force_fp32(apply_to=('cls_scores', 'mask_scores', 'iou_scores'))
@@ -328,15 +351,15 @@ class SoftGroup(nn.Module):
             offset_labels=pt_offset_labels.cpu().numpy(),
             instance_labels=instance_labels.cpu().numpy())
         if not self.semantic_only:
-            # print('forward_test semantic_scores', semantic_scores.shape)
-            # print('forward_test pt_offsets', pt_offsets.shape)
-            # print('forward_test batch_idxs', batch_idxs.shape)
-            # print('forward_test coords_float', coords_float.shape)
-            # print('forward_test grouping_cfg', self.grouping_cfg)
+            print('forward_test semantic_scores', semantic_scores.shape)
+            print('forward_test pt_offsets', pt_offsets.shape)
+            print('forward_test batch_idxs', batch_idxs.shape)
+            print('forward_test coords_float', coords_float.shape)
+            print('forward_test grouping_cfg', self.grouping_cfg)
             proposals_idx, proposals_offset = self.forward_grouping(semantic_scores, pt_offsets,
                                                                     batch_idxs, coords_float,
                                                                     self.grouping_cfg)
-            # print('forward_test after forward grouping proposals_idx', proposals_idx.shape)
+            print('forward_test after forward grouping proposals_idx', proposals_idx.shape)
             inst_feats, inst_map = self.clusters_voxelization(proposals_idx, proposals_offset,
                                                               output_feats, coords_float,
                                                               **self.instance_voxel_cfg)
@@ -452,11 +475,7 @@ class SoftGroup(nn.Module):
         cls_scores = self.cls_linear(feats)
         iou_scores = self.iou_score_linear(feats)
 
-        # if cls_scores.size(0) > 50:
-        #     print('inst_feats size', inst_feats)
-        #     print('feats size', feats.size())
-        #     print('cls_scores size', cls_scores.size())
-        #     print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+        print(f'feats size: {feats.size()}, cls_scores.size: {cls_scores.size()}, inst_feats size from clusters_voxelization {inst_feats}')
 
         return instance_batch_idxs, cls_scores, iou_scores, mask_scores
 
@@ -474,7 +493,7 @@ class SoftGroup(nn.Module):
                 score_pred = cls_scores.new_tensor([1.], dtype=torch.float32)
                 mask_pred = (semantic_pred == i)[None, :].int()
             else:
-                # print('SOFTGROUP GET_INSTANCES', num_instances, num_points)
+                print(f'SOFTGROUP GET_INSTANCES instances {num_instances}, points {num_points}')
                 cls_pred = cls_scores.new_full((num_instances, ), i + 1, dtype=torch.long)
                 cur_cls_scores = cls_scores[:, i]
                 cur_iou_scores = iou_scores[:, i]
@@ -538,21 +557,27 @@ class SoftGroup(nn.Module):
                               scale,
                               spatial_shape,
                               rand_quantize=False):
-        # print('clustesr_voxelization feats', feats.shape)
+        print('clusters_voxelization feats', feats.shape)
         batch_idx = clusters_idx[:, 0].cuda().long()
         c_idxs = clusters_idx[:, 1].cuda()
         feats = feats[c_idxs.long()]
         coords = coords[c_idxs.long()]
-        # print('clustesr_voxelization clusters_idx', clusters_idx.shape)
-        # print('clustesr_voxelization c_idxs', c_idxs.shape)
-        # print('clustesr_voxelization feats 2', feats.shape)
+        print('clusters_voxelization clusters_idx', clusters_idx.shape)
+        print('clusters_voxelization c_idxs', c_idxs.shape)
+        print('clusters_voxelization feats 2', feats.shape)
 
         coords_min = sec_min(coords, clusters_offset.cuda())
         coords_max = sec_max(coords, clusters_offset.cuda())
+        print('clusters_voxelization coords_min, coords_max', coords_min, coords_max)
 
         # 0.01 to ensure voxel_coords < spatial_shape
         clusters_scale = 1 / ((coords_max - coords_min) / spatial_shape).max(1)[0] - 0.01
+        print('clusters_voxelization clusters_scale shape', clusters_scale.shape)
+        print('clusters_voxelization clusters_scale', clusters_scale)
+        print('clusters_voxelization clusters_scale max',
+                clusters_scale.max(), 'min', clusters_scale.min(), 'mean', clusters_scale.mean())
         clusters_scale = torch.clamp(clusters_scale, min=None, max=scale)
+        print('clusters_voxelization clusters_scale clamped to', clusters_scale)
 
         coords_min = coords_min * clusters_scale[:, None]
         coords_max = coords_max * clusters_scale[:, None]
@@ -576,6 +601,8 @@ class SoftGroup(nn.Module):
         voxelization_feats = spconv.SparseConvTensor(out_feats,
                                                      out_coords.int().cuda(), spatial_shape,
                                                      int(clusters_idx[-1, 0]) + 1)
+
+        print('cluster_voxelization feats shape', feats.shape, 'and voxelization_feats feats', out_feats.shape, 'and out_coords', out_coords.shape)
         return voxelization_feats, inp_map
 
     def get_batch_offsets(self, batch_idxs, bs):
