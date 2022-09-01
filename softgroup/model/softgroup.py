@@ -44,9 +44,6 @@ class SoftGroup(nn.Module):
         self.sem2ins_classes = sem2ins_classes
         self.ignore_instance_label = ignore_instance_label
 
-        # TODO: this is debug code to make the trees work
-        self.ignore_instance_label = 0
-
         self.ignore_label = ignore_label
         self.with_coords = with_coords
         self.grouping_cfg = grouping_cfg
