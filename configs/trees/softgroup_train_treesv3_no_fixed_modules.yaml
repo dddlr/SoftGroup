@@ -4,11 +4,9 @@ model:
   semantic_classes: 3
   instance_classes: 2
   sem2ins_classes: []
-  semantic_only: True
-  # ignore_label: -100
-  ignore_label: 1
-  ignore_offset_loss: False
-  offset_loss_multiplier: 0.005
+  semantic_only: False
+  ignore_label: -100
+  # ignore_label: 1  # ignore non-tree points
   grouping_cfg:
     score_thr: 0.2
     radius: 2.0
@@ -28,6 +26,7 @@ model:
     mask_score_thr: -0.5
     min_npoint: 100
   fixed_modules: []
+  ignore_offset_loss: False
 
 data:
   train:
@@ -49,7 +48,7 @@ data:
     suffix: '.pth'
     training: False
     voxel_cfg:
-      scale: 1
+      scale: 5
       spatial_shape: [128, 512]
       max_npoint: 250000
       min_npoint: 5000
@@ -72,7 +71,7 @@ save_cfg:
   instance: True
 
 fp16: False
-epochs: 30
+epochs: 128
 step_epoch: 20
 save_freq: 2
 # pretrain: './hais_ckpt_spconv2.pth'

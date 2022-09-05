@@ -8,16 +8,16 @@ model:
   # ignore_label: -100
   ignore_label: 1
   ignore_offset_loss: False
-  offset_loss_multiplier: 0.005
+  # offset_loss_multiplier: 0.005
   grouping_cfg:
     score_thr: 0.2
-    radius: 2.0
+    radius: 1.0
     mean_active: 300
     class_numpoint_mean: [-1., 400., 20.]
     npoint_thr: 1  # absolute if class_numpoint == -1, relative if class_numpoint != -1
     ignore_classes: []
   instance_voxel_cfg:
-    scale: 1
+    scale: 100
     spatial_shape: 20
   train_cfg:
     max_proposal_num: 200
@@ -32,24 +32,24 @@ model:
 data:
   train:
     type: 'trees'
-    data_root: 'dataset/treesv3'
+    data_root: 'dataset/treesv2'
     prefix: 'train'
     suffix: '.pth'
     training: True
     repeat: 4  # or 4?
     voxel_cfg:
-      scale: 1
+      scale: 100
       spatial_shape: [128, 512]
       max_npoint: 250000
       min_npoint: 5000
   test:
     type: 'trees'
-    data_root: 'dataset/treesv3'
+    data_root: 'dataset/treesv2'
     prefix: 'val'
     suffix: '.pth'
     training: False
     voxel_cfg:
-      scale: 1
+      scale: 100
       spatial_shape: [128, 512]
       max_npoint: 250000
       min_npoint: 5000
