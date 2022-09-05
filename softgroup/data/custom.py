@@ -23,6 +23,7 @@ class CustomDataset(Dataset):
                  voxel_cfg=None,
                  training=True,
                  repeat=1,
+                 max_instances=None,
                  logger=None):
         self.data_root = data_root
         self.prefix = prefix
@@ -32,13 +33,17 @@ class CustomDataset(Dataset):
         self.repeat = repeat
         self.logger = logger
         self.mode = 'train' if training else 'test'
+        self.max_instances = max_instances
         self.filenames = self.get_filenames()
+        if self.max_instances is not None:
+            print(f'Number of data files restricted to: {self.max_instances}')
         self.logger.info(f'Load {self.mode} dataset: {len(self.filenames)} scans')
 
     def get_filenames(self):
         filenames = glob(osp.join(self.data_root, self.prefix, '*' + self.suffix))
         assert len(filenames) > 0, 'Empty dataset.'
         filenames = sorted(filenames * self.repeat)
+        filenames = filenames[:self.max_instances]
         return filenames
 
     def load(self, filename):
@@ -110,6 +115,7 @@ class CustomDataset(Dataset):
         assert valid_idxs.sum() == xyz.shape[0]
         spatial_shape = np.array([self.voxel_cfg.spatial_shape[1]] * 3)
         room_range = xyz.max(0) - xyz.min(0)
+        print('CROPPING room range:', xyz.max(0), xyz.min(0))
         while (valid_idxs.sum() > self.voxel_cfg.max_npoint):
             step_temp = step
             if valid_idxs.sum() > 1e6:

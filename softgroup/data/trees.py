@@ -1,4 +1,5 @@
 from .custom import CustomDataset
+import numpy as np
 
 
 class TreesDataset(CustomDataset):
@@ -21,6 +22,10 @@ class TreesDataset(CustomDataset):
     def transform_train(self, xyz, rgb, semantic_label, instance_label, aug_prob=1.0):
         xyz_middle = self.dataAugment(xyz, True, True, True, aug_prob)
         xyz = xyz_middle * self.voxel_cfg.scale
+
+        if self.voxel_cfg.scale_vector:
+            print('Scaling coords by', self.voxel_cfg.scale_vector)
+            xyz *= self.voxel_cfg.scale_vector
 
         # Disabled because in self.elastic, the size of the noise array
         # (i.e. np.abs(x).max(0).astype(np.int32) // gran + 3)
@@ -45,5 +50,18 @@ class TreesDataset(CustomDataset):
         xyz_middle = xyz_middle[valid_idxs]
         rgb = rgb[valid_idxs]
         semantic_label = semantic_label[valid_idxs]
+        instance_label = self.getCroppedInstLabel(instance_label, valid_idxs)
+        return xyz, xyz_middle, rgb, semantic_label, instance_label
+
+    def transform_test(self, xyz, rgb, semantic_label, instance_label):
+        xyz_middle = self.dataAugment(xyz, False, False, False)
+        xyz = xyz_middle * self.voxel_cfg.scale
+
+        if self.voxel_cfg.scale_vector:
+            print('Scaling coords by', self.voxel_cfg.scale_vector)
+            xyz *= self.voxel_cfg.scale_vector
+
+        xyz -= xyz.min(0)
+        valid_idxs = np.ones(xyz.shape[0], dtype=bool)
         instance_label = self.getCroppedInstLabel(instance_label, valid_idxs)
         return xyz, xyz_middle, rgb, semantic_label, instance_label

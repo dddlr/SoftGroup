@@ -508,6 +508,7 @@ class SoftGroup(nn.Module):
                 mask_pred = mask_pred[inds]
 
                 # filter too small instances
+                print('mask_pred shape', mask_pred.shape)
                 npoint = mask_pred.sum(1)
                 inds = npoint >= self.test_cfg.min_npoint
                 cls_pred = cls_pred[inds]
