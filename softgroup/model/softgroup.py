@@ -497,18 +497,23 @@ class SoftGroup(nn.Module):
                 cur_mask_scores = mask_scores[:, i]
                 score_pred = cur_cls_scores * cur_iou_scores.clamp(0, 1)
                 mask_pred = torch.zeros((num_instances, num_points), dtype=torch.int, device='cuda')
+                print('original mask_pred shape', mask_pred.shape)
                 mask_inds = cur_mask_scores > self.test_cfg.mask_score_thr
+                print('mask score threshold', self.test_cfg.mask_score_thr)
+                print(f'mask inds for class {i}: {sum(mask_inds)}')
                 cur_proposals_idx = proposals_idx[mask_inds].long()
                 mask_pred[cur_proposals_idx[:, 0], cur_proposals_idx[:, 1]] = 1
 
                 # filter low score instance
                 inds = cur_cls_scores > self.test_cfg.cls_score_thr
+                print('class score threshold', self.test_cfg.cls_score_thr)
+                print(f'inds for class {i}: {sum(inds)}')
                 cls_pred = cls_pred[inds]
                 score_pred = score_pred[inds]
                 mask_pred = mask_pred[inds]
 
                 # filter too small instances
-                print('mask_pred shape', mask_pred.shape)
+                print('new mask_pred shape', mask_pred.shape)
                 npoint = mask_pred.sum(1)
                 inds = npoint >= self.test_cfg.min_npoint
                 cls_pred = cls_pred[inds]
