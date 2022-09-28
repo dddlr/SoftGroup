@@ -14,13 +14,13 @@ import multiprocessing as mp
 from itertools import product
 
 
-BASE_DIR = '/local/gwo21/softgroup/treesv4_hand_annotated/'
-OUTPUT_DIRECTORY = '/csse/users/gwo21/uc-notes/honours/SoftGroup/dataset/treesv4/unsorted/'
+BASE_DIR = '/home/gwo21/landcare_handanno/'
+OUTPUT_DIRECTORY = '/home/gwo21/softgroup/dataset/treesv5/unsorted/'
 
 COORDS_SCALE_FACTOR = 80
 
-NOT_TREE = 1
-IS_TREE = 2
+NOT_TREE = 0
+IS_TREE = 1
 
 
 def convert_tile(tile_number: str):

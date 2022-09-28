@@ -14,8 +14,8 @@ import multiprocessing as mp
 from itertools import product
 
 
-BASE_DIR = '/csse/users/gwo21/uc-notes/honours/PointGroup/landcare_trees/'
-OUTPUT_DIRECTORY = '/csse/users/gwo21/uc-notes/honours/SoftGroup/dataset/treesv3/unsorted/'
+BASE_DIR = '/scratch/data/gwo21/softgroup/landcare_trees/'
+OUTPUT_DIRECTORY = '/scratch/data/gwo21/softgroup/dataset/treesv3/unsorted/'
 
 COORDS_SCALE_FACTOR = 80
 

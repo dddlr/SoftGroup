@@ -17,7 +17,7 @@ def get_tile_number(filename: str):
 
 
 if __name__ == '__main__':
-    NOT_TREE, IS_TREE = 1, 2
+    NOT_TREE, IS_TREE = 0, 1
     split = 'val'
     files = sorted(glob.glob('{}/*.pth'.format(split)))
     scenes = [torch.load(i) for i in files]
