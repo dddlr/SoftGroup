@@ -23,9 +23,12 @@ class TreesDataset(CustomDataset):
         xyz_middle = self.dataAugment(xyz, True, True, True, aug_prob)
         xyz = xyz_middle * self.voxel_cfg.scale
 
-        if self.voxel_cfg.scale_vector:
-            print('Scaling coords by', self.voxel_cfg.scale_vector)
-            xyz *= self.voxel_cfg.scale_vector
+        try:
+            if self.voxel_cfg.scale_vector:
+                print('Scaling coords by', self.voxel_cfg.scale_vector)
+                xyz *= self.voxel_cfg.scale_vector
+        except AttributeError:
+            pass
 
         # Disabled because in self.elastic, the size of the noise array
         # (i.e. np.abs(x).max(0).astype(np.int32) // gran + 3)
@@ -57,9 +60,12 @@ class TreesDataset(CustomDataset):
         xyz_middle = self.dataAugment(xyz, False, False, False)
         xyz = xyz_middle * self.voxel_cfg.scale
 
-        if self.voxel_cfg.scale_vector:
-            print('Scaling coords by', self.voxel_cfg.scale_vector)
-            xyz *= self.voxel_cfg.scale_vector
+        try:
+            if self.voxel_cfg.scale_vector:
+                print('Scaling coords by', self.voxel_cfg.scale_vector)
+                xyz *= self.voxel_cfg.scale_vector
+        except AttributeError:
+            pass
 
         xyz -= xyz.min(0)
         valid_idxs = np.ones(xyz.shape[0], dtype=bool)
