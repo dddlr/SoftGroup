@@ -2,6 +2,7 @@ import argparse
 import multiprocessing as mp
 import os
 import os.path as osp
+import time
 
 import numpy as np
 import torch
@@ -109,15 +110,20 @@ def main():
     offset_preds, offset_labels, inst_labels, pred_insts, gt_insts = [], [], [], [], []
     _, world_size = get_dist_info()
     progress_bar = tqdm(total=len(dataloader) * world_size, disable=not is_main_process())
+    times = []
     with torch.no_grad():
         model.eval()
         for i, batch in enumerate(dataloader):
+            start_time = time.perf_counter()
             result = model(batch)
+            end_time = time.perf_counter() - start_time
             results.append(result)
+            times.append(end_time)
             progress_bar.update(world_size)
         progress_bar.close()
         results = collect_results_gpu(results, len(dataset))
     if is_main_process():
+        logger.info(f"Inference time (avg): {sum(times) / len(times)}")
         for res in results:
             scan_ids.append(res['scan_id'])
             coords.append(res['coords_float'])
