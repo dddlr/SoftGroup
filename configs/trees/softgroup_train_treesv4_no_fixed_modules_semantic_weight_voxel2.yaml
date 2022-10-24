@@ -4,9 +4,15 @@ model:
   semantic_classes: 3
   instance_classes: 2
   sem2ins_classes: []
-  semantic_only: True
+  semantic_only: False
+  # Weights for semantic loss (CrossEntropyLoss)
+  #
+  # not_tree and is_tree classes respectively
+  # 
+  # https://stackoverflow.com/a/67836741 for how to calculate this
+  semantic_weight: [1.0, 0.53646499, 7.35589029]
   ignore_label: -100
-  offset_loss_multiplier: 0.05
+  offset_loss_multiplier: 1.0
   grouping_cfg:
     score_thr: 0.2
     radius: 2.0
@@ -26,7 +32,7 @@ model:
     mask_score_thr: -0.5
     min_npoint: 100
   fixed_modules: []
-  ignore_offset_loss: False
+  ignore_offset_loss: True
 
 data:
   train:
@@ -35,20 +41,24 @@ data:
     prefix: 'train'
     suffix: '.pth'
     training: True
-    repeat: 4  # or 4?
+    repeat: 1  # or 4?
+    max_instances: 10
     voxel_cfg:
-      scale: 1
+      scale: 3
+      scale_vector: [1, 1, 0.5]
       spatial_shape: [128, 512]
       max_npoint: 250000
       min_npoint: 5000
   test:
     type: 'trees'
     data_root: 'dataset/treesv4'
-    prefix: 'test'
+    prefix: 'val'
     suffix: '.pth'
     training: False
+    max_instances: 10
     voxel_cfg:
-      scale: 1
+      scale: 3
+      scale_vector: [1, 0.25, 1]
       spatial_shape: [128, 512]
       max_npoint: 250000
       min_npoint: 5000

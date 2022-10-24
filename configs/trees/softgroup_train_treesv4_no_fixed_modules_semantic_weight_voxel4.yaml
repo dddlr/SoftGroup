@@ -58,7 +58,7 @@ data:
     max_instances: 10
     voxel_cfg:
       scale: 3
-      scale_vector: [1, 0.25, 1]
+      scale_vector: [1, 1, 0.25]
       spatial_shape: [128, 512]
       max_npoint: 250000
       min_npoint: 5000
