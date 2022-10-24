@@ -1,0 +1,80 @@
+model:
+  channels: 16
+  num_blocks: 7
+  semantic_classes: 3
+  instance_classes: 2
+  sem2ins_classes: []
+  semantic_only: True
+  ignore_label: -100
+  # ignore_label: 1  # ignore non-tree points
+  grouping_cfg:
+    score_thr: 0.2
+    radius: 2.0
+    mean_active: 300
+    class_numpoint_mean: [-1., 400., 20.]
+    npoint_thr: 1  # absolute if class_numpoint == -1, relative if class_numpoint != -1
+    ignore_classes: []
+  instance_voxel_cfg:
+    scale: 1
+    spatial_shape: 20
+  train_cfg:
+    max_proposal_num: 200
+    pos_iou_thr: 0.5
+  test_cfg:
+    x4_split: False
+    cls_score_thr: 0.001
+    mask_score_thr: -0.5
+    min_npoint: 100
+  fixed_modules: []
+  ignore_offset_loss: True
+
+data:
+  train:
+    type: 'trees'
+    # data_root: 'dataset/treesv4'
+    data_root: 'dataset/trees_rcnn'  # for easy comparison with Mask R-CNN
+    prefix: 'train'
+    suffix: '.pth'
+    training: True
+    repeat: 4  # or 4?
+    voxel_cfg:
+      scale: 12
+      spatial_shape: [128, 512]
+      max_npoint: 250000
+      min_npoint: 5000
+  test:
+    type: 'trees'
+    data_root: 'dataset/treesv4'
+    prefix: 'test'
+    suffix: '.pth'
+    training: False
+    voxel_cfg:
+      scale: 12
+      spatial_shape: [128, 512]
+      max_npoint: 250000
+      min_npoint: 5000
+
+dataloader:
+  train:
+    batch_size: 4
+    num_workers: 32
+  test:
+    batch_size: 1
+    num_workers: 32
+
+optimizer:
+  type: 'Adam'
+  lr: 0.004
+
+save_cfg:
+  semantic: True
+  offset: False
+  instance: False
+
+fp16: False
+epochs: 48
+step_epoch: 20
+save_freq: 2
+# pretrain: './hais_ckpt_spconv2.pth'
+pretrain: ''
+work_dir: ''
