@@ -53,3 +53,46 @@ SoftGroup
 │   │   ├── test
 │   │   ├── val_gt
 ```
+
+## Tree dataset
+
+1\) Download the tree dataset, which should contain some `CL2_BQ31_2019_1000_XXXX_treecrowns.laz` files (where XXXX represents a four-digit number) and some corresponding `CL2_BQ31_2019_1000_XXXX_trees.zip` archives.
+
+2\) Unzip the zip archives. The resulting folder structure might look like this:
+
+```
+CL2_BQ31_2019_1000_1836_treecrowns.laz
+CL2_BQ31_2019_1000_1836_trees
+CL2_BQ31_2019_1000_1836_trees.zip
+CL2_BQ31_2019_1000_2035_treecrowns.laz
+CL2_BQ31_2019_1000_2035_trees
+CL2_BQ31_2019_1000_2035_trees.zip
+CL2_BQ31_2019_1000_2135_treecrowns.laz
+CL2_BQ31_2019_1000_2135_trees
+CL2_BQ31_2019_1000_2135_trees.zip
+CL2_BQ31_2019_1000_2137_treecrowns.laz
+CL2_BQ31_2019_1000_2137_trees
+CL2_BQ31_2019_1000_2137_trees.zip
+CL2_BQ31_2019_1000_2641_treecrowns.laz
+CL2_BQ31_2019_1000_2641_trees
+CL2_BQ31_2019_1000_2641_trees.zip
+CL2_BQ31_2019_1000_2645_treecrowns.laz
+CL2_BQ31_2019_1000_2645_trees
+CL2_BQ31_2019_1000_2645_trees.zip
+```
+
+3\) Run the preparation script:
+
+```
+python3 dataset/treesv4/prepare_data_inst_trees.py
+```
+
+Be sure to set `BASE_DIR` to the directory that contains the files from Step 2, and `OUTPUT_DIRECTORY` to the desired directory for the output point cloud files.
+
+4\) Move the output files to the folders `train`, `val`, and `test` within `dataset/treesv4/` as desired. (These represent the training, validation, and test datasets.)
+
+5\) Run this script:
+
+```
+python3 dataset/treesv4/prepare_data_inst_gttxt_trees.py
+```
