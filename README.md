@@ -69,10 +69,23 @@ Training on ScanNet doesnot require finetuning the backbone. Just freeze pretrai
 ./tools/dist_train.sh configs/softgroup_stpls3d.yaml 4
 ```
 
+### Training tree dataset
+
+```
+time ./tools/dist_train.sh configs/trees_final/trees_best.yaml 1
+```
+
 ## Inference
 ```
 ./tools/dist_test.sh $CONFIG_FILE $CHECKPOINT $NUM_GPU
 ```
+
+For example, with the tree dataset:
+
+```
+time ./tools/dist_test.sh work_dirs/trees_best/trees_best.yaml work_dirs/trees_best/latest.pth 1
+```
+
 ### Bounding box evaluation of ScanNet V2 dataset.
 We provide script to evaluate detection performance on axis-aligned boxes from predicted/ground-truth instance.
 - Step 1: Change ``save_instance`` to ``True`` in [config file](https://github.com/thangvubk/SoftGroup/blob/99ffb9756e553e0edfb2c43e2ab6a6f646892bb5/config/softgroup_default_scannet.yaml#L72).
